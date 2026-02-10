@@ -40,8 +40,9 @@ const connectDB = async () => {
         await mongoose.connect(mongoUri);
         console.log('Connected to MongoDB');
 
-        if (isInMemory && fs.existsSync(DB_FILE)) {
-            console.log('Seeding in-memory database from db.json...');
+        const userCount = await User.countDocuments();
+        if (userCount === 0 && fs.existsSync(DB_FILE)) {
+            console.log('Database is empty. Seeding from db.json...');
             const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
 
             if (data.users) await User.insertMany(data.users);

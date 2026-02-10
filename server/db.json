@@ -1,0 +1,61 @@
+{
+  "users": [
+    {
+      "id": "admin",
+      "name": "System Admin",
+      "role": "evaluator",
+      "password": "admin"
+    },
+    {
+      "id": "supervisor",
+      "name": "Supervisor User",
+      "role": "evaluator",
+      "password": "sup"
+    },
+    {
+      "id": "emp01",
+      "name": "John Doe",
+      "role": "employee",
+      "password": "emp"
+    },
+    {
+      "id": "emp02",
+      "name": "Jane Smith",
+      "role": "employee",
+      "password": "emp"
+    },
+    {
+      "id": "hr01",
+      "name": "HR Manager",
+      "role": "hr",
+      "password": "hr"
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "1763801415947",
+      "employeeId": "",
+      "employeeName": "",
+      "jobTitle": "",
+      "department": "",
+      "periodFrom": "",
+      "periodTo": "",
+      "ratings": {},
+      "status": "DRAFT",
+      "supervisorComments": "",
+      "signatures": {
+        "employee": null,
+        "supervisor": null
+      }
+    }
+  ],
+  "evaluatorAssignments": [
+    {
+      "id": "1",
+      "evaluatorId": "supervisor",
+      "employeeId": "emp01",
+      "assignedBy": "hr01",
+      "isActive": true
+    }
+  ]
+}

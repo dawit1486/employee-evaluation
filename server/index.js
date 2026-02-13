@@ -10,6 +10,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { User } from './models/User.js';
 import { Evaluation } from './models/Evaluation.js';
 import { EvaluatorAssignment } from './models/EvaluatorAssignment.js';
+import { MovementLog } from './models/MovementLog.js';
 
 dotenv.config();
 
@@ -117,6 +118,160 @@ app.get('/api/employees', async (req, res) => {
         res.json(employees);
     } catch (error) {
         console.error('Get employees error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ===== MOVEMENT / OUT-OF-OFFICE TRACKING =====
+
+// Helper to compute current status based on expected return and actual return
+const computeMovementStatus = (movement) => {
+    if (!movement) return 'IN_OFFICE';
+    if (movement.actualReturnTimestamp) {
+        // If they returned, mark overdue only if they came back late
+        return movement.actualReturnTimestamp > movement.expectedReturnTime
+            ? 'OVERDUE'
+            : 'IN_OFFICE';
+    }
+    // Still out
+    const now = new Date();
+    return now > movement.expectedReturnTime ? 'OVERDUE' : 'OUT_OF_OFFICE';
+};
+
+// Employee Check-Out
+app.post('/api/movements/check-out', async (req, res) => {
+    try {
+        const { employeeId, category, destination, reason, expectedReturnTime } = req.body;
+
+        if (!employeeId || !category || !destination || !reason || !expectedReturnTime) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const employee = await User.findOne({ id: employeeId });
+        if (!employee) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        // Prevent multiple active check-outs
+        const activeMovement = await MovementLog.findOne({
+            employeeId,
+            actualReturnTimestamp: null
+        }).sort({ departureTimestamp: -1 });
+
+        if (activeMovement) {
+            return res.status(400).json({ error: 'Employee already checked out' });
+        }
+
+        const departureTimestamp = new Date();
+        const expectedReturn = new Date(expectedReturnTime);
+
+        const movement = new MovementLog({
+            id: Date.now().toString(),
+            employeeId,
+            employeeName: employee.name,
+            department: employee.department,
+            category,
+            destination,
+            reason,
+            expectedReturnTime: expectedReturn,
+            departureTimestamp,
+            status: 'OUT_OF_OFFICE'
+        });
+
+        await movement.save();
+
+        // TODO: Integrate Telegram bot and email notifications here.
+        // For now, log to the console so the behavior is observable.
+        console.log(
+            `[Movement] ${employee.name} checked OUT to "${destination}" for "${reason}" until ${expectedReturn.toISOString()}`
+        );
+
+        res.json(movement);
+    } catch (error) {
+        console.error('Check-out error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Employee Check-In
+app.post('/api/movements/check-in', async (req, res) => {
+    try {
+        const { employeeId } = req.body;
+
+        if (!employeeId) {
+            return res.status(400).json({ error: 'Employee ID is required' });
+        }
+
+        const movement = await MovementLog.findOne({
+            employeeId,
+            actualReturnTimestamp: null
+        }).sort({ departureTimestamp: -1 });
+
+        if (!movement) {
+            return res.status(404).json({ error: 'No active movement found' });
+        }
+
+        movement.actualReturnTimestamp = new Date();
+        movement.status = computeMovementStatus(movement);
+        await movement.save();
+
+        console.log(
+            `[Movement] ${movement.employeeName} checked IN at ${movement.actualReturnTimestamp.toISOString()}`
+        );
+
+        res.json(movement);
+    } catch (error) {
+        console.error('Check-in error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Get active movements (who is currently out)
+app.get('/api/movements/active', async (req, res) => {
+    try {
+        const { department } = req.query;
+        const query = { actualReturnTimestamp: null };
+        if (department) {
+            query.department = department;
+        }
+
+        const movements = await MovementLog.find(query).sort({ departureTimestamp: -1 });
+        const now = new Date();
+
+        const enriched = movements.map(m => {
+            const currentStatus = now > m.expectedReturnTime ? 'OVERDUE' : 'OUT_OF_OFFICE';
+            return {
+                ...m.toObject(),
+                currentStatus
+            };
+        });
+
+        res.json(enriched);
+    } catch (error) {
+        console.error('Get active movements error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// History & reports (with basic filters)
+app.get('/api/movements', async (req, res) => {
+    try {
+        const { employeeId, department, fromDate, toDate } = req.query;
+        const query = {};
+
+        if (employeeId) query.employeeId = employeeId;
+        if (department) query.department = department;
+
+        if (fromDate || toDate) {
+            query.departureTimestamp = {};
+            if (fromDate) query.departureTimestamp.$gte = new Date(fromDate);
+            if (toDate) query.departureTimestamp.$lte = new Date(toDate);
+        }
+
+        const movements = await MovementLog.find(query).sort({ departureTimestamp: -1 });
+        res.json(movements);
+    } catch (error) {
+        console.error('Get movements error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });

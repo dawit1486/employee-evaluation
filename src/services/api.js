@@ -179,5 +179,66 @@ export const api = {
     },
 
     // Initialize (no-op for real backend)
-    init: () => { }
+    init: () => { },
+
+    // ===== Movement / Out-of-Office Tracking =====
+
+    // Employee check-out
+    checkOut: async ({ employeeId, category, destination, reason, expectedReturnTime }) => {
+        const response = await fetch(`${API_URL}/movements/check-out`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                employeeId,
+                category,
+                destination,
+                reason,
+                expectedReturnTime
+            })
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to check out');
+        }
+        return response.json();
+    },
+
+    // Employee check-in
+    checkIn: async ({ employeeId }) => {
+        const response = await fetch(`${API_URL}/movements/check-in`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employeeId })
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to check in');
+        }
+        return response.json();
+    },
+
+    // Active movements (who is currently out)
+    getActiveMovements: async (department = null) => {
+        const url = department
+            ? `${API_URL}/movements/active?department=${encodeURIComponent(department)}`
+            : `${API_URL}/movements/active`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to load active movements');
+        return response.json();
+    },
+
+    // History / reports
+    getMovements: async ({ employeeId, department, fromDate, toDate } = {}) => {
+        const params = new URLSearchParams();
+        if (employeeId) params.append('employeeId', employeeId);
+        if (department) params.append('department', department);
+        if (fromDate) params.append('fromDate', fromDate);
+        if (toDate) params.append('toDate', toDate);
+
+        const queryString = params.toString();
+        const url = queryString ? `${API_URL}/movements?${queryString}` : `${API_URL}/movements`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to load movements');
+        return response.json();
+    }
 };

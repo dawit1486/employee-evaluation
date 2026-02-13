@@ -1,65 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import ChangePasswordModal from '../components/ChangePasswordModal';
-import { Plus, FileText, LogOut, Lock } from 'lucide-react';
+import { LogOut, Lock, Users, AlertTriangle, Clock } from 'lucide-react';
 
 export default function EvaluatorDashboard() {
-    const [evaluations, setEvaluations] = useState([]);
-    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [movements, setMovements] = useState([]);
+    const [error, setError] = useState('');
+
+    const loadActiveMovements = async () => {
+        try {
+            setError('');
+            const data = await api.getActiveMovements();
+            setMovements(data);
+        } catch (err) {
+            console.error('Failed to load active movements', err);
+            setError('Failed to load active movements.');
+        }
+    };
+
     useEffect(() => {
-        const loadEvaluations = async () => {
-            if (user?.id) {
-                try {
-                    const myEvaluations = await api.getEvaluationsByEvaluator(user.id);
-                    setEvaluations(myEvaluations);
-                } catch (error) {
-                    console.error('Failed to load evaluations:', error);
-                }
-            }
-        };
-        loadEvaluations();
-    }, [user?.id]);
+        loadActiveMovements();
+        const interval = setInterval(loadActiveMovements, 30000); // refresh every 30s
+        return () => clearInterval(interval);
+    }, []);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const createNewEvaluation = () => {
-        const newId = Date.now().toString();
-        // Navigate to form with new ID
-        navigate(`/evaluation/${newId}?mode=create`);
+    const formatDateTime = (value) => {
+        if (!value) return '-';
+        const d = new Date(value);
+        return d.toLocaleString();
     };
 
-    const openEvaluation = (id) => {
-        navigate(`/evaluation/${id}`);
-    };
-
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'COMPLETED':
-                return <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Completed</span>;
-            case 'PENDING_EMPLOYEE':
-                return <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">Pending Employee</span>;
-            case 'PENDING_SUPERVISOR':
-                return <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">Pending Finalization</span>;
-            default:
-                return <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">Draft</span>;
-        }
+    const formatTime = (value) => {
+        if (!value) return '-';
+        const d = new Date(value);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <header className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Evaluator Dashboard</h1>
-                        <p className="text-slate-500">Welcome back, {user?.name}</p>
+                        <h1 className="text-2xl font-bold text-slate-900">Supervisor Dashboard</h1>
+                        <p className="text-slate-500">
+                            Real-time view of employees currently out of the office.
+                        </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
@@ -80,46 +76,91 @@ export default function EvaluatorDashboard() {
                     </div>
                 </header>
 
+                {error && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {error}
+                    </div>
+                )}
+
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                        <h2 className="font-semibold text-lg text-slate-800">Recent Evaluations</h2>
+                        <div className="flex items-center gap-2 text-slate-800 font-semibold">
+                            <Users size={18} />
+                            Who is Out
+                        </div>
                         <button
-                            onClick={createNewEvaluation}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
+                            onClick={loadActiveMovements}
+                            className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-900"
                         >
-                            <Plus size={18} />
-                            New Evaluation
+                            <Clock size={16} />
+                            Refresh
                         </button>
                     </div>
 
-                    {evaluations.length === 0 ? (
+                    {movements.length === 0 ? (
                         <div className="p-12 text-center text-slate-400">
-                            <FileText size={48} className="mx-auto mb-4 opacity-20" />
-                            <p>No evaluations found. Create one to get started.</p>
+                            <p>No employees are currently out of the office.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-100">
-                            {evaluations.map(evaluation => (
-                                <div
-                                    key={evaluation.id}
-                                    onClick={() => openEvaluation(evaluation.id)}
-                                    className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex items-center justify-between group"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
-                                            {evaluation.employeeName?.charAt(0) || '?'}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-medium text-slate-900">{evaluation.employeeName || 'Untitled Evaluation'}</h3>
-                                            <p className="text-xs text-slate-500">{evaluation.jobTitle || 'No Job Title'} • {evaluation.department || 'No Dept'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        {getStatusBadge(evaluation.status)}
-                                        <span className="text-slate-400 text-sm">{new Date(parseInt(evaluation.id)).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                                <thead>
+                                    <tr className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                                        <th className="px-3 py-2">Employee</th>
+                                        <th className="px-3 py-2">Department</th>
+                                        <th className="px-3 py-2">Category</th>
+                                        <th className="px-3 py-2">Destination</th>
+                                        <th className="px-3 py-2">Reason</th>
+                                        <th className="px-3 py-2">Left At</th>
+                                        <th className="px-3 py-2">Expected Back</th>
+                                        <th className="px-3 py-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {movements.map((m) => (
+                                        <tr key={m.id} className="border-t border-slate-100">
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                <div className="font-medium text-slate-900">
+                                                    {m.employeeName}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    ID: {m.employeeId}
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                {m.department || '-'}
+                                            </td>
+                                            <td className="px-3 py-2 capitalize whitespace-nowrap">
+                                                {m.category === 'work' ? 'Work-related' : 'Personal'}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                {m.destination}
+                                            </td>
+                                            <td className="px-3 py-2 max-w-xs truncate" title={m.reason}>
+                                                {m.reason}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                {formatDateTime(m.departureTimestamp)}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                {formatTime(m.expectedReturnTime)}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                {m.currentStatus === 'OVERDUE' ? (
+                                                    <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                                                        <AlertTriangle size={14} className="mr-1" />
+                                                        Overdue
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                                        On Time
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>

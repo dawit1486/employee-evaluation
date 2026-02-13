@@ -3,13 +3,13 @@
     {
       "id": "admin",
       "name": "System Admin",
-      "role": "evaluator",
+      "role": "management",
       "password": "admin"
     },
     {
       "id": "supervisor",
       "name": "Supervisor User",
-      "role": "evaluator",
+      "role": "management",
       "password": "sup"
     },
     {

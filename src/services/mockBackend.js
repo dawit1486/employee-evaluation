@@ -4,7 +4,7 @@ const EVALUATIONS_KEY = 'ee_evaluations';
 
 // Initial Mock Data
 const INITIAL_USERS = [
-    { id: 'admin', name: 'System Admin', role: 'evaluator', password: 'admin' },
+    { id: 'admin', name: 'System Admin', role: 'management', password: 'admin' },
     { id: 'emp01', name: 'John Doe', role: 'employee', password: 'emp' },
     { id: 'emp02', name: 'Jane Smith', role: 'employee', password: 'emp' },
 ];

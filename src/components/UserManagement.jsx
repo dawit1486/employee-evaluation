@@ -116,12 +116,13 @@ export default function UserManagement() {
     const getRoleBadge = (role) => {
         const styles = {
             hr: 'bg-purple-100 text-purple-700',
-            evaluator: 'bg-blue-100 text-blue-700',
+            management: 'bg-blue-100 text-blue-700',
             employee: 'bg-green-100 text-green-700'
         };
+        const label = role === 'management' ? 'Management' : role.charAt(0).toUpperCase() + role.slice(1);
         return (
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[role]}`}>
-                {role.charAt(0).toUpperCase() + role.slice(1)}
+                {label}
             </span>
         );
     };
@@ -145,7 +146,7 @@ export default function UserManagement() {
                     >
                         <option value="all">All Roles</option>
                         <option value="hr">HR</option>
-                        <option value="evaluator">Evaluator</option>
+                        <option value="management">Management</option>
                         <option value="employee">Employee</option>
                     </select>
                 </div>
@@ -256,7 +257,7 @@ export default function UserManagement() {
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="employee">Employee</option>
-                                    <option value="evaluator">Evaluator</option>
+                                    <option value="management">Management</option>
                                     <option value="hr">HR</option>
                                 </select>
                             </div>

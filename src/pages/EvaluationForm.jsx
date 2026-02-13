@@ -39,7 +39,7 @@ export default function EvaluationForm() {
   const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
-    if (user?.role === 'evaluator') {
+    if (user?.role === 'management') {
       const loadEmployees = async () => {
         const emps = await api.getEmployees();
         setEmployees(emps);
@@ -291,7 +291,7 @@ export default function EvaluationForm() {
               <h1 className="text-3xl font-bold mb-2">Performance Evaluation</h1>
               <p className="opacity-90">Employee Performance Appraisal Form</p>
             </div>
-            {(formData.status === 'COMPLETED' || user?.role === 'evaluator') && (
+            {(formData.status === 'COMPLETED' || user?.role === 'management') && (
               <button
                 onClick={generatePDF}
                 className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all backdrop-blur-sm"
@@ -314,7 +314,7 @@ export default function EvaluationForm() {
               Employee Name / የሠራተኛው ስም
               <div className="input-wrapper">
                 <User size={18} />
-                {formData.status === 'DRAFT' && user?.role === 'evaluator' ? (
+                {formData.status === 'DRAFT' && user?.role === 'management' ? (
                   <select
                     value={formData.employeeId}
                     onChange={(e) => {
@@ -422,7 +422,7 @@ export default function EvaluationForm() {
                             <button
                               key={r}
                               type="button"
-                              onClick={() => user?.role === 'evaluator' && formData.status === 'DRAFT' && handleRatingChange(item.id, r)}
+                              onClick={() => user?.role === 'management' && formData.status === 'DRAFT' && handleRatingChange(item.id, r)}
                               className={`rating-button ${rating === r ? 'active' : ''} ${formData.status !== 'DRAFT' ? 'disabled' : ''}`}
                               disabled={formData.status !== 'DRAFT'}
                             >
@@ -515,13 +515,13 @@ export default function EvaluationForm() {
                 onChange={(e) => setManagerDecision(e.target.value)}
                 rows={4}
                 placeholder="Enter final decision or recommendations..."
-                disabled={formData.status !== 'PENDING_SUPERVISOR' || user?.role !== 'evaluator'}
+                disabled={formData.status !== 'PENDING_SUPERVISOR' || user?.role !== 'management'}
               />
             </article>
           )}
 
           {/* Supervisor Signature */}
-          {user?.role === 'evaluator' && formData.status === 'DRAFT' && (
+          {user?.role === 'management' && formData.status === 'DRAFT' && (
             <article className="comment-card">
               <h3>Supervisor Signature / የኃላፊው ፊርማ</h3>
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 bg-white">
@@ -603,7 +603,7 @@ export default function EvaluationForm() {
 
         {/* Actions */}
         <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-4 sticky bottom-0 z-10">
-          {user?.role === 'evaluator' && formData.status === 'DRAFT' && (
+          {user?.role === 'management' && formData.status === 'DRAFT' && (
             <>
               <button onClick={handleSave} className="secondary-btn flex items-center gap-2">
                 <Save size={18} />
@@ -623,7 +623,7 @@ export default function EvaluationForm() {
             </button>
           )}
 
-          {user?.role === 'evaluator' && formData.status === 'PENDING_SUPERVISOR' && (
+          {user?.role === 'management' && formData.status === 'PENDING_SUPERVISOR' && (
             <button onClick={handleFinalize} className="primary-btn flex items-center gap-2">
               <CheckCircle size={18} />
               Finalize Evaluation

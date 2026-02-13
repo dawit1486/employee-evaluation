@@ -18,7 +18,7 @@ export default function LoginPage() {
             const user = await login(id, password);
             if (user.role === 'hr') {
                 navigate('/hr-dashboard');
-            } else if (user.role === 'evaluator') {
+            } else if (user.role === 'management') {
                 navigate('/evaluator-dashboard');
             } else {
                 navigate('/employee-dashboard');

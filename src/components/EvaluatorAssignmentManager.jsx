@@ -24,7 +24,7 @@ export default function EvaluatorAssignmentManager() {
 
             setAssignments(assignmentsData);
             setEmployees(usersData.filter(u => u.role === 'employee'));
-            setEvaluators(usersData.filter(u => u.role === 'evaluator'));
+            setEvaluators(usersData.filter(u => u.role === 'management'));
         } catch (error) {
             console.error('Failed to load data:', error);
         }

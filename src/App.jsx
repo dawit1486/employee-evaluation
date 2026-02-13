@@ -30,7 +30,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
     const dashboardMap = {
-      evaluator: '/evaluator-dashboard',
+      management: '/evaluator-dashboard',
       employee: '/employee-dashboard',
       hr: '/hr-dashboard'
     };
@@ -45,7 +45,7 @@ function AppRoutes() {
 
   const getDashboardRoute = (userRole) => {
     const dashboardMap = {
-      evaluator: '/evaluator-dashboard',
+      management: '/evaluator-dashboard',
       employee: '/employee-dashboard',
       hr: '/hr-dashboard'
     };
@@ -62,7 +62,7 @@ function AppRoutes() {
       <Route
         path="/evaluator-dashboard"
         element={
-          <ProtectedRoute allowedRoles={['evaluator']}>
+          <ProtectedRoute allowedRoles={['management']}>
             <EvaluatorDashboard />
           </ProtectedRoute>
         }

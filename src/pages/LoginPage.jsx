@@ -81,7 +81,7 @@ export default function LoginPage() {
                 </form>
 
                 <div className="footer-text">
-                    Employee Evaluation System
+                    Employee Tracking System
                 </div>
             </div>
         </div>

@@ -6,6 +6,7 @@ import UserManagement from '../components/UserManagement';
 import EvaluatorAssignmentManager from '../components/EvaluatorAssignmentManager';
 import CompletedEvaluations from '../components/CompletedEvaluations';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import MovementReports from '../components/MovementReports';
 
 export default function HRDashboard() {
     const [activeTab, setActiveTab] = useState('users');
@@ -79,6 +80,16 @@ export default function HRDashboard() {
                                 <FileCheck size={20} />
                                 Evaluation Reports
                             </button>
+                            <button
+                                onClick={() => setActiveTab('movements')}
+                                className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${activeTab === 'movements'
+                                    ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                    }`}
+                            >
+                                <FileCheck size={20} />
+                                Movement Reports
+                            </button>
                         </div>
                     </div>
 
@@ -86,6 +97,7 @@ export default function HRDashboard() {
                         {activeTab === 'users' && <UserManagement />}
                         {activeTab === 'assignments' && <EvaluatorAssignmentManager />}
                         {activeTab === 'evaluations' && <CompletedEvaluations />}
+                        {activeTab === 'movements' && <MovementReports />}
                     </div>
                 </div>
             </div>

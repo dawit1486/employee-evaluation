@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { User } from './models/User.js';
 import { Evaluation } from './models/Evaluation.js';
@@ -20,9 +21,25 @@ const DB_FILE = path.join(__dirname, 'db.json');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
+
+// Basic email transport (optional; only used if env vars are set)
+let mailTransport = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    mailTransport = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: false,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+}
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -138,6 +155,39 @@ const computeMovementStatus = (movement) => {
     return now > movement.expectedReturnTime ? 'OVERDUE' : 'OUT_OF_OFFICE';
 };
 
+// Helper: send Telegram notification (best-effort)
+const sendTelegramNotification = async (text) => {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+    try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text
+            })
+        });
+    } catch (err) {
+        console.error('Telegram notification error:', err.message || err);
+    }
+};
+
+// Helper: send Email notification (best-effort)
+const sendEmailNotification = async ({ to, subject, html }) => {
+    if (!mailTransport || !to) return;
+    try {
+        await mailTransport.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to,
+            subject,
+            html
+        });
+    } catch (err) {
+        console.error('Email notification error:', err.message || err);
+    }
+};
+
 // Employee Check-Out
 app.post('/api/movements/check-out', async (req, res) => {
     try {
@@ -180,8 +230,32 @@ app.post('/api/movements/check-out', async (req, res) => {
 
         await movement.save();
 
-        // TODO: Integrate Telegram bot and email notifications here.
-        // For now, log to the console so the behavior is observable.
+        const message = `Employee OUT: ${employee.name} (${employee.id})
+Category: ${category === 'work' ? 'Work-related' : 'Personal'}
+Destination: ${destination}
+Reason: ${reason}
+Expected back: ${expectedReturn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+        // Fire-and-forget notifications
+        sendTelegramNotification(message);
+
+        // Optional email notification to a central address
+        if (process.env.MOVEMENT_NOTIFY_EMAIL) {
+            await sendEmailNotification({
+                to: process.env.MOVEMENT_NOTIFY_EMAIL,
+                subject: `Employee Out-of-Office: ${employee.name}`,
+                html: `
+                    <p><strong>Employee:</strong> ${employee.name} (${employee.id})</p>
+                    <p><strong>Department:</strong> ${employee.department || '-'}</p>
+                    <p><strong>Category:</strong> ${category === 'work' ? 'Work-related' : 'Personal'}</p>
+                    <p><strong>Destination:</strong> ${destination}</p>
+                    <p><strong>Reason:</strong> ${reason}</p>
+                    <p><strong>Expected Return:</strong> ${expectedReturn.toLocaleString()}</p>
+                    <p>This message was generated automatically by the Out-of-Office Tracking System.</p>
+                `
+            });
+        }
+
         console.log(
             `[Movement] ${employee.name} checked OUT to "${destination}" for "${reason}" until ${expectedReturn.toISOString()}`
         );

@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: 'employee-evaluation',
+            name: 'employee-tracking-system',
             script: 'server/index.js',
             env: {
                 NODE_ENV: 'production',

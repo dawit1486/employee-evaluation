@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const projectRoot = path.join(__dirname, '..');
 
-console.log('Starting Employee Evaluation App...');
+console.log('Starting Employee Tracking System...');
 
 // Start Backend
 const server = spawn('node', ['server/index.js'], {

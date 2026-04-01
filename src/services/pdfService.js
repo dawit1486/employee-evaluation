@@ -239,3 +239,75 @@ export const generateEvaluationPDF = (evaluationData) => {
 
     doc.save(`Evaluation_${evaluationData.employeeName.replace(/\s+/g, '_')}_${evaluationData.periodTo}.pdf`);
 };
+
+export const generateMovementHistoryPDF = (movements = [], reportTitle = 'Employee Movement History') => {
+    const doc = new jsPDF('landscape');
+    const now = new Date();
+    const generatedAt = now.toLocaleString();
+
+    doc.setFontSize(16);
+    doc.setTextColor(40, 40, 40);
+    doc.text(reportTitle, 14, 16);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${generatedAt}`, 14, 23);
+
+    const rows = movements.map((m) => {
+        const status =
+            m.actualReturnTimestamp &&
+                new Date(m.actualReturnTimestamp) > new Date(m.expectedReturnTime)
+                ? 'Overdue'
+                : m.actualReturnTimestamp
+                    ? 'On Time'
+                    : 'Out';
+
+        return [
+            m.employeeId || '-',
+            m.employeeName || '-',
+            m.department || '-',
+            m.category === 'work' ? 'Work-related' : 'Personal',
+            m.destination || '-',
+            (m.reason || '-').replace(/\r?\n/g, ' '),
+            m.departureTimestamp ? new Date(m.departureTimestamp).toLocaleString() : '-',
+            m.expectedReturnTime ? new Date(m.expectedReturnTime).toLocaleString() : '-',
+            m.actualReturnTimestamp ? new Date(m.actualReturnTimestamp).toLocaleString() : '-',
+            status
+        ];
+    });
+
+    autoTable(doc, {
+        startY: 28,
+        head: [[
+            'Employee ID',
+            'Employee Name',
+            'Department',
+            'Category',
+            'Destination',
+            'Reason',
+            'Departure',
+            'Expected Return',
+            'Actual Return',
+            'Status'
+        ]],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229], textColor: 255 },
+        styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+        columnStyles: {
+            0: { cellWidth: 24 },
+            1: { cellWidth: 27 },
+            2: { cellWidth: 23 },
+            3: { cellWidth: 20 },
+            4: { cellWidth: 26 },
+            5: { cellWidth: 45 },
+            6: { cellWidth: 32 },
+            7: { cellWidth: 32 },
+            8: { cellWidth: 32 },
+            9: { cellWidth: 34 }
+        }
+    });
+
+    const fileDate = now.toISOString().split('T')[0];
+    doc.save(`management_movement_history_${fileDate}.pdf`);
+};

@@ -54,7 +54,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="email">Employee ID</label>
+                        <label htmlFor="email">Username</label>
                         <input
                             type="text"
                             id="email"
